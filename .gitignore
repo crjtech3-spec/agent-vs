@@ -12,3 +12,4 @@ agent/state.json
 agent.log
 *.log
 workspace/tasks.db
+*.vsix
