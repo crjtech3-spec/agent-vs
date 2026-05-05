@@ -117,8 +117,7 @@ class AgentSessionManager:
         goal = goal.strip()
         if not goal:
             raise SessionError("Field 'goal' is required.")
-        if not config.AZURE_API_KEY:
-            raise SessionError("AZURE_OPENAI_API_KEY is not set on the server.")
+        self._require_api_config()
         max_iterations = max_iterations or config.MAX_ITERATIONS
 
         with self._lock:
@@ -246,11 +245,17 @@ class AgentSessionManager:
     # ------------------------------------------------------------------ #
 
     def health(self) -> Dict[str, Any]:
+        config_ready = bool(
+            config.AZURE_ENDPOINT and config.AZURE_API_KEY and config.MODEL_NAME
+        )
         return {
             "ok": True,
             "model": config.MODEL_NAME,
             "endpoint": config.AZURE_ENDPOINT,
             "key_set": bool(config.AZURE_API_KEY),
+            "endpoint_set": bool(config.AZURE_ENDPOINT),
+            "model_set": bool(config.MODEL_NAME),
+            "config_ready": config_ready,
             "env_file": config.ACTIVE_ENV_FILE,
             "workspace": str(config.WORKSPACE_DIR),
             "runtime_dir": str(config.RUNTIME_DIR),
@@ -261,8 +266,7 @@ class AgentSessionManager:
         }
 
     def test_connection(self) -> Dict[str, Any]:
-        if not config.AZURE_API_KEY:
-            raise SessionError("AZURE_OPENAI_API_KEY is not set on the server.")
+        self._require_api_config()
 
         client = AzureResponsesClient()
         probe = [
@@ -282,3 +286,18 @@ class AgentSessionManager:
             "model": config.MODEL_NAME,
             "reply": text,
         }
+
+    def _require_api_config(self) -> None:
+        missing: list[str] = []
+        if not config.AZURE_ENDPOINT:
+            missing.append("endpoint")
+        if not config.MODEL_NAME:
+            missing.append("model/deployment")
+        if not config.AZURE_API_KEY:
+            missing.append("API key")
+        if missing:
+            raise SessionError(
+                "Azure AI Foundry is not fully configured. Set "
+                + ", ".join(missing)
+                + " in Agent VS before running the agent."
+            )

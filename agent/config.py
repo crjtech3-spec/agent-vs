@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 
 def _read_dotenv(path: Path) -> dict[str, str]:
@@ -47,6 +48,68 @@ def _env_value(name: str, default: str = "") -> str:
     if name in _PROJECT_ENV:
         return _PROJECT_ENV[name]
     return default
+
+
+def _env_value_any(names: list[str], default: str = "") -> str:
+    for name in names:
+        value = _env_value(name)
+        if value:
+            return value
+    return default
+
+
+def _normalize_azure_endpoint(raw: str) -> str:
+    """Accept a resource URL, v1 base URL, or full responses endpoint."""
+    value = (raw or "").strip().strip('"').strip("'")
+    if not value:
+        return ""
+
+    try:
+        parts = urlsplit(value)
+    except ValueError:
+        return value
+
+    if not parts.scheme or not parts.netloc:
+        return value
+
+    path = parts.path.rstrip("/")
+    lowered = path.lower()
+
+    if lowered.endswith("/openai/v1/responses") or lowered.endswith("/openai/responses"):
+        return urlunsplit((parts.scheme, parts.netloc, path, parts.query, ""))
+
+    if lowered.endswith("/openai/v1/chat/completions"):
+        new_path = path[: -len("/chat/completions")] + "/responses"
+        return urlunsplit((parts.scheme, parts.netloc, new_path, "", ""))
+
+    if lowered.endswith("/models/chat/completions"):
+        return urlunsplit(
+            (parts.scheme, parts.netloc, "/openai/v1/responses", "", "")
+        )
+
+    if lowered.endswith("/openai/v1"):
+        return urlunsplit(
+            (parts.scheme, parts.netloc, f"{path}/responses", "", "")
+        )
+
+    if lowered.endswith("/openai"):
+        return urlunsplit(
+            (parts.scheme, parts.netloc, f"{path}/v1/responses", "", "")
+        )
+
+    if "/openai/" not in lowered and "/models/" not in lowered:
+        base_path = path or ""
+        return urlunsplit(
+            (
+                parts.scheme,
+                parts.netloc,
+                f"{base_path}/openai/v1/responses",
+                "",
+                "",
+            )
+        )
+
+    return urlunsplit((parts.scheme, parts.netloc, path, parts.query, ""))
 
 
 def _runtime_env_candidates(workspace: Path) -> list[Path]:
@@ -126,13 +189,20 @@ def refresh_runtime_settings(path: "str | Path | None" = None) -> Path:
 
     _WORKSPACE_ENV, ACTIVE_ENV_FILE = _load_workspace_env(WORKSPACE_DIR)
 
-    AZURE_ENDPOINT = _env_value(
-        "AZURE_OPENAI_ENDPOINT",
-        "https://models4dev.cognitiveservices.azure.com/openai/responses"
-        "?api-version=2025-04-01-preview",
+    AZURE_ENDPOINT = _normalize_azure_endpoint(
+        _env_value_any(
+            ["AZURE_FOUNDRY_ENDPOINT", "AZURE_OPENAI_ENDPOINT"],
+            "",
+        )
     )
-    AZURE_API_KEY = _env_value("AZURE_OPENAI_API_KEY", "")
-    MODEL_NAME = _env_value("AZURE_OPENAI_MODEL", "gpt-5.4")
+    AZURE_API_KEY = _env_value_any(
+        ["AZURE_FOUNDRY_API_KEY", "AZURE_OPENAI_API_KEY"],
+        "",
+    )
+    MODEL_NAME = _env_value_any(
+        ["AZURE_FOUNDRY_MODEL", "AZURE_OPENAI_MODEL"],
+        "",
+    )
     MAX_ITERATIONS = int(_env_value("AGENT_MAX_ITERATIONS", "60"))
 
     RUNTIME_DIR = _runtime_dir_for(WORKSPACE_DIR)

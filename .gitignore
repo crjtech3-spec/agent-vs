@@ -3,6 +3,12 @@ __pycache__/
 **/__pycache__/
 *.pyc
 *.pyo
+node_modules/
+out/
+Users/
+agent-vs-code-gpt/
+src/*.js
+src/*.js.map
 .env
 .env.*
 .agentvs/

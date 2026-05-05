@@ -1,104 +1,146 @@
 {
-  "name": "agent-vs",
-  "displayName": "Agent VS",
-  "description": "Autonomous coding agent for VS Code backed by a local Python runtime and Azure OpenAI.",
-  "version": "0.1.0",
-  "publisher": "crjtech3-spec",
-  "preview": true,
-  "icon": "vscode/media/icon.png",
-  "license": "UNLICENSED",
-  "homepage": "https://github.com/crjtech3-spec/agent-vs#readme",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/crjtech3-spec/agent-vs.git"
-  },
-  "bugs": {
-    "url": "https://github.com/crjtech3-spec/agent-vs/issues"
-  },
-  "engines": {
-    "vscode": "^1.90.0"
-  },
-  "categories": [
-    "Other",
-    "Machine Learning"
-  ],
-  "keywords": [
-    "ai",
-    "agent",
-    "azure-openai",
-    "python",
-    "automation",
-    "coding-assistant"
-  ],
-  "galleryBanner": {
-    "color": "#0f172a",
-    "theme": "dark"
-  },
-  "activationEvents": [
-    "onView:agentVs.sidebar",
-    "onCommand:agentVs.openPanel",
-    "onCommand:agentVs.installDependencies",
-    "onCommand:agentVs.showOutput"
-  ],
-  "main": "./vscode/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "agentVs.openPanel",
-        "title": "Agent VS: Open Panel"
-      },
-      {
-        "command": "agentVs.installDependencies",
-        "title": "Agent VS: Install Backend Dependencies"
-      },
-      {
-        "command": "agentVs.showOutput",
-        "title": "Agent VS: Show Output"
-      }
+    "name": "azure-foundry-agent",
+    "displayName": "Azure Foundry Agent",
+    "description": "A VS Code coding assistant for Azure AI Foundry models",
+    "version": "0.0.2",
+    "publisher": "crjtech",
+    "license": "UNLICENSED",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/crjtech3-spec/agent-vs.git"
+    },
+    "bugs": {
+        "url": "https://github.com/crjtech3-spec/agent-vs/issues"
+    },
+    "homepage": "https://github.com/crjtech3-spec/agent-vs#readme",
+    "engines": {
+        "vscode": "^1.74.0"
+    },
+    "categories": [
+        "Other"
     ],
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "agentVs",
-          "title": "Agent VS",
-          "icon": "vscode/media/activity.svg"
+    "keywords": [
+        "azure",
+        "foundry",
+        "ai",
+        "copilot",
+        "coding"
+    ],
+    "activationEvents": [
+        "onView:agentVs.sidebar",
+        "onCommand:agentVs.openPanel",
+        "onCommand:agentVs.installDependencies",
+        "onCommand:agentVs.showOutput",
+        "onCommand:agentVs.setApiKey",
+        "onCommand:agentVs.clearApiKey",
+        "onCommand:agentVs.openSettings"
+    ],
+    "main": "./out/extension.js",
+    "icon": "vscode/media/icon.png",
+    "contributes": {
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "agentVs",
+                    "title": "Azure Foundry Agent",
+                    "icon": "vscode/media/activity.svg"
+                }
+            ]
+        },
+        "views": {
+            "agentVs": [
+                {
+                    "id": "agentVs.sidebar",
+                    "name": "Azure Foundry Agent",
+                    "contextualTitle": "Azure Foundry Agent"
+                }
+            ]
+        },
+        "commands": [
+            {
+                "command": "agentVs.openPanel",
+                "title": "Azure Foundry Agent: Open Sidebar"
+            },
+            {
+                "command": "agentVs.installDependencies",
+                "title": "Azure Foundry Agent: Install Backend Dependencies"
+            },
+            {
+                "command": "agentVs.showOutput",
+                "title": "Azure Foundry Agent: Show Output"
+            },
+            {
+                "command": "agentVs.setApiKey",
+                "title": "Azure Foundry Agent: Set Azure Foundry API Key"
+            },
+            {
+                "command": "agentVs.clearApiKey",
+                "title": "Azure Foundry Agent: Clear Azure Foundry API Key"
+            },
+            {
+                "command": "agentVs.openSettings",
+                "title": "Azure Foundry Agent: Open Settings"
+            }
+        ],
+        "configuration": {
+            "title": "Azure Foundry Agent",
+            "properties": {
+                "agentVs.foundryEndpoint": {
+                    "type": "string",
+                    "default": "",
+                    "scope": "machine",
+                    "markdownDescription": "Azure AI Foundry endpoint. You can paste a base `https://<resource>.openai.azure.com/openai/v1/` URL, a `https://<resource>.services.ai.azure.com/openai/v1/` URL, or a full responses endpoint."
+                },
+                "agentVs.foundryModel": {
+                    "type": "string",
+                    "default": "",
+                    "scope": "machine",
+                    "markdownDescription": "Model or deployment name sent to Azure AI Foundry. Use the deployment name your endpoint expects."
+                },
+                "agentVs.pythonPath": {
+                    "type": "string",
+                    "default": "python",
+                    "scope": "machine",
+                    "markdownDescription": "Python executable used to launch the Azure Foundry Agent backend."
+                },
+                "agentVs.envFile": {
+                    "type": "string",
+                    "default": "",
+                    "scope": "resource",
+                    "markdownDescription": "Optional workspace-relative env file. Azure Foundry Agent still loads `.agentvs/config.env` and `.env` automatically when this is empty."
+                },
+                "agentVs.maxIterations": {
+                    "type": "number",
+                    "default": 60,
+                    "minimum": 1,
+                    "maximum": 500,
+                    "scope": "resource",
+                    "markdownDescription": "Default iteration cap for new agent runs."
+                },
+                "agentVs.promptInstallDependencies": {
+                    "type": "boolean",
+                    "default": true,
+                    "scope": "machine",
+                    "markdownDescription": "Prompt to install missing Python backend dependencies automatically."
+                }
+            }
         }
-      ]
     },
-    "views": {
-      "agentVs": [
-        {
-          "id": "agentVs.sidebar",
-          "name": "Assistant"
-        }
-      ]
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "package:vsix": "vsce package"
     },
-    "configuration": {
-      "title": "Agent VS",
-      "properties": {
-        "agentVs.pythonPath": {
-          "type": "string",
-          "default": "python",
-          "description": "Python executable used to launch the local agent backend."
-        },
-        "agentVs.envFile": {
-          "type": "string",
-          "default": ".agentvs/config.env",
-          "description": "Workspace-relative env file that Agent VS loads before reading Azure OpenAI settings."
-        },
-        "agentVs.maxIterations": {
-          "type": "number",
-          "default": 60,
-          "minimum": 1,
-          "maximum": 500,
-          "description": "Default iteration cap used when starting a run from the Agent VS panel."
-        },
-        "agentVs.promptInstallDependencies": {
-          "type": "boolean",
-          "default": true,
-          "description": "Prompt to install missing Python backend dependencies when the agent starts."
-        }
-      }
+    "devDependencies": {
+        "@vscode/vsce": "2.24.0",
+        "@types/vscode": "^1.74.0",
+        "@types/node": "16.x",
+        "typescript": "^4.9.4"
+    },
+    "dependencies": {
+    },
+    "overrides": {
+        "cheerio": "1.0.0-rc.12"
     }
-  }
 }

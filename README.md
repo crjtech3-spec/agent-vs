@@ -1,6 +1,6 @@
-# Agent VS
+# Azure Foundry Agent
 
-Agent VS is a VS Code sidebar extension backed by a local Python agent runtime and the Azure OpenAI Responses REST API.
+Azure Foundry Agent is a VS Code sidebar extension backed by a local Python agent runtime and the Azure OpenAI Responses REST API.
 
 No SDK is used. Model calls go through `requests` to the Azure OpenAI Responses endpoint.
 
@@ -11,41 +11,54 @@ This repository is now structured so it can be packaged for the VS Code Marketpl
 - `https://github.com/crjtech3-spec/agent-vs`
 - `https://github.com/crjtech3-spec/agent-vs/issues`
 - the `UNLICENSED` placeholder if you plan to publish under a real license
-- your final VS Code Marketplace publisher slug, if it differs from `crjtech3-spec`
+- your final VS Code Marketplace publisher slug, if it differs from `crjtech`
 
 ## Quick start for an installed extension
 
 1. Install Python 3.9+ on the machine that runs VS Code.
 2. Install the extension.
-3. Open a folder in VS Code. Agent VS only edits files inside the active workspace root.
-4. Set these extension settings if needed:
-   - `agentVs.pythonPath`
-   - `agentVs.envFile`
-   - `agentVs.maxIterations`
-5. Create a workspace env file at `.agentvs/config.env` by default, or point `agentVs.envFile` somewhere else.
-6. Put your Azure settings in that env file:
+3. Open a folder in VS Code. Azure Foundry Agent only edits files inside the active workspace root.
+4. Open the `Azure Foundry Agent` sidebar.
+5. Paste your Azure AI Foundry connection details:
+   - endpoint in the sidebar config form, or `agentVs.foundryEndpoint`
+   - model or deployment name in the sidebar config form, or `agentVs.foundryModel`
+   - API key in the sidebar config form, or `Azure Foundry Agent: Set Azure Foundry API Key`
+6. Click `Save Config`.
+7. Click `Install Backend` once, or run `Azure Foundry Agent: Install Backend Dependencies`.
+8. Click `Test API`.
+9. Enter a goal and click `Run`.
+
+If you prefer env files, Azure Foundry Agent still reads workspace values from `.agentvs/config.env` and `.env`. The extension also accepts both legacy Azure OpenAI variable names and Foundry-flavored names:
 
 ```dotenv
 AZURE_OPENAI_API_KEY=<your-key>
-AZURE_OPENAI_ENDPOINT=https://models4dev.cognitiveservices.azure.com/openai/responses?api-version=2025-04-01-preview
-AZURE_OPENAI_MODEL=gpt-5.4
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/openai/v1/
+AZURE_OPENAI_MODEL=<deployment-or-model-name>
 ```
 
-7. Open the `Agent VS` sidebar.
-8. Click `Install Backend` once, or run `Agent VS: Install Backend Dependencies`.
-9. Click `Test API`.
-10. Enter a goal and click `Run`.
+or
+
+```dotenv
+AZURE_FOUNDRY_API_KEY=<your-key>
+AZURE_FOUNDRY_ENDPOINT=https://your-resource.services.ai.azure.com/openai/v1/
+AZURE_FOUNDRY_MODEL=<deployment-or-model-name>
+```
 
 ## Extension commands
 
-- `Agent VS: Open Panel`
-- `Agent VS: Install Backend Dependencies`
-- `Agent VS: Show Output`
+- `Azure Foundry Agent: Open Sidebar`
+- `Azure Foundry Agent: Install Backend Dependencies`
+- `Azure Foundry Agent: Show Output`
+- `Azure Foundry Agent: Set Azure Foundry API Key`
+- `Azure Foundry Agent: Clear Azure Foundry API Key`
+- `Azure Foundry Agent: Open Settings`
 
 ## Extension settings
 
+- `agentVs.foundryEndpoint`: Azure AI Foundry endpoint or full responses URL
+- `agentVs.foundryModel`: model or deployment name used for requests
 - `agentVs.pythonPath`: Python executable used to launch the backend
-- `agentVs.envFile`: workspace-relative env file loaded before reading Azure OpenAI settings
+- `agentVs.envFile`: workspace-relative env file loaded before reading Foundry settings
 - `agentVs.maxIterations`: default iteration cap for new runs
 - `agentVs.promptInstallDependencies`: prompt to install missing Python modules automatically
 
@@ -95,7 +108,7 @@ pip install -r requirements-vscode.txt
    - `workspace/.agentvs/config.env`
    - a source-only root `.env` for local development
 4. Press `F5` to launch an Extension Development Host.
-5. In the development host, open a workspace folder and use the `Agent VS` sidebar.
+5. In the development host, open a workspace folder and use the `Azure Foundry Agent` sidebar.
 
 ### Run as CLI
 
@@ -127,9 +140,11 @@ python run_gui.py
 Install `vsce` and package from the repo root:
 
 ```powershell
-npm install -g @vscode/vsce
-vsce package
+npm install
+npm run package:vsix
 ```
+
+This repository pins a local `@vscode/vsce` version that works with Node 18. Using the project-local package command is more reliable than a newer global `vsce`.
 
 Before you package or publish:
 
