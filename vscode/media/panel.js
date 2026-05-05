@@ -8,6 +8,7 @@
     files: [],
     events: [],
     status: "idle",
+    configDirty: false,
   };
 
   const refs = {
@@ -18,6 +19,14 @@
     runtimePath: document.getElementById("runtimePath"),
     statusBadge: document.getElementById("statusBadge"),
     healthBadge: document.getElementById("healthBadge"),
+    configMeta: document.getElementById("configMeta"),
+    configNote: document.getElementById("configNote"),
+    endpointInput: document.getElementById("endpointInput"),
+    modelInput: document.getElementById("modelInput"),
+    apiKeyInput: document.getElementById("apiKeyInput"),
+    saveConfigBtn: document.getElementById("saveConfigBtn"),
+    clearKeyBtn: document.getElementById("clearKeyBtn"),
+    settingsBtn: document.getElementById("settingsBtn"),
     iterationMeta: document.getElementById("iterationMeta"),
     planList: document.getElementById("planList"),
     fileCount: document.getElementById("fileCount"),
@@ -26,6 +35,7 @@
     eventsLog: document.getElementById("eventsLog"),
     goalInput: document.getElementById("goalInput"),
     maxIterations: document.getElementById("maxIterations"),
+    attachContext: document.getElementById("attachContext"),
     refreshBtn: document.getElementById("refreshBtn"),
     installBtn: document.getElementById("installBtn"),
     outputBtn: document.getElementById("outputBtn"),
@@ -36,6 +46,7 @@
   };
 
   refs.maxIterations.value = "60";
+  refs.attachContext.checked = true;
 
   const post = (type, payload = {}) => vscode.postMessage({ type, ...payload });
 
@@ -72,6 +83,61 @@
     return type.replaceAll("_", " ");
   };
 
+  function configStatus() {
+    const endpointSet = Boolean(state.health.endpoint_set);
+    const modelSet = Boolean(state.health.model_set);
+    const keySet = Boolean(state.health.key_set);
+
+    if (endpointSet && modelSet && keySet) {
+      return {
+        text: "ready",
+        badgeText: "api ready",
+        badgeClass: "badge-finished",
+        note:
+          "Connection is configured. The API key is stored in VS Code secret storage.",
+      };
+    }
+
+    if (!endpointSet) {
+      return {
+        text: "endpoint missing",
+        badgeText: "config needed",
+        badgeClass: "badge-error",
+        note:
+          "Paste a Foundry base endpoint like https://<resource>.openai.azure.com/openai/v1/ or a full responses URL.",
+      };
+    }
+
+    if (!modelSet) {
+      return {
+        text: "model missing",
+        badgeText: "model missing",
+        badgeClass: "badge-error",
+        note:
+          "Use the deployment name or model name that your Foundry endpoint expects.",
+      };
+    }
+
+    return {
+      text: "api key missing",
+      badgeText: "api key missing",
+      badgeClass: "badge-error",
+      note:
+        "Paste a new API key to store it securely. Leave the key field blank to keep the current secret.",
+    };
+  }
+
+  function syncConfigInputs(force = false) {
+    if (!force && state.configDirty) {
+      return;
+    }
+
+    refs.endpointInput.value = String(state.health.endpoint || "");
+    refs.modelInput.value = String(state.health.model || "");
+    refs.apiKeyInput.value = "";
+    state.configDirty = false;
+  }
+
   function hydrate(payload) {
     state.workspaceMissing = Boolean(payload.workspaceMissing);
     state.health = payload.health || {};
@@ -85,8 +151,11 @@
       state.status = "running";
     } else if (state.sessionState.finished) {
       state.status = "finished";
+    } else if (state.status === "running") {
+      state.status = "idle";
     }
 
+    syncConfigInputs();
     render();
   }
 
@@ -129,6 +198,8 @@
   }
 
   function render() {
+    const cfg = configStatus();
+
     refs.workspaceMissing.classList.toggle("hidden", !state.workspaceMissing);
     refs.mainContent.classList.toggle("hidden", state.workspaceMissing);
 
@@ -139,12 +210,10 @@
     refs.statusBadge.textContent = state.status;
     refs.statusBadge.className = `badge ${statusClass(state.status)}`;
 
-    refs.healthBadge.textContent = state.health.key_set
-      ? "api ready"
-      : "api key missing";
-    refs.healthBadge.className = `badge ${
-      state.health.key_set ? "badge-finished" : "badge-error"
-    }`;
+    refs.healthBadge.textContent = cfg.badgeText;
+    refs.healthBadge.className = `badge ${cfg.badgeClass}`;
+    refs.configMeta.textContent = cfg.text;
+    refs.configNote.innerHTML = escapeHtml(cfg.note);
 
     const iteration = Number(state.sessionState.iteration || 0);
     refs.iterationMeta.textContent = iteration
@@ -184,7 +253,8 @@
   function renderFiles() {
     refs.fileCount.textContent = `${state.files.length}`;
     if (!state.files.length) {
-      refs.filesList.innerHTML = '<div class="empty-line">No files indexed yet.</div>';
+      refs.filesList.innerHTML =
+        '<div class="empty-line">No files indexed yet.</div>';
       return;
     }
 
@@ -194,7 +264,9 @@
         if (file.is_dir) {
           return `<div class="file-pill dir">${escapeHtml(file.path)}/</div>`;
         }
-        return `<button class="file-pill file" data-path="${escapeHtml(file.path)}">${escapeHtml(file.path)}</button>`;
+        return `<button class="file-pill file" data-path="${escapeHtml(
+          file.path
+        )}">${escapeHtml(file.path)}</button>`;
       })
       .join("");
   }
@@ -202,7 +274,8 @@
   function renderEvents() {
     refs.eventCount.textContent = `${state.events.length}`;
     if (!state.events.length) {
-      refs.eventsLog.innerHTML = '<div class="empty-line">Session events will appear here.</div>';
+      refs.eventsLog.innerHTML =
+        '<div class="empty-line">Session events will appear here.</div>';
       return;
     }
 
@@ -239,16 +312,37 @@
     refs.eventsLog.scrollTop = refs.eventsLog.scrollHeight;
   }
 
+  [refs.endpointInput, refs.modelInput, refs.apiKeyInput].forEach((input) => {
+    input.addEventListener("input", () => {
+      state.configDirty = true;
+    });
+  });
+
   refs.refreshBtn.addEventListener("click", () => post("refresh"));
   refs.installBtn.addEventListener("click", () => post("installDependencies"));
   refs.outputBtn.addEventListener("click", () => post("showOutput"));
   refs.testBtn.addEventListener("click", () => post("testConnection"));
   refs.resetBtn.addEventListener("click", () => post("reset"));
+  refs.saveConfigBtn.addEventListener("click", () => {
+    state.configDirty = false;
+    post("saveConfig", {
+      endpoint: refs.endpointInput.value.trim(),
+      model: refs.modelInput.value.trim(),
+      apiKey: refs.apiKeyInput.value,
+    });
+  });
+  refs.clearKeyBtn.addEventListener("click", () => {
+    state.configDirty = false;
+    refs.apiKeyInput.value = "";
+    post("clearApiKey");
+  });
+  refs.settingsBtn.addEventListener("click", () => post("openSettings"));
   refs.stopBtn.addEventListener("click", () => post("stop"));
   refs.runBtn.addEventListener("click", () =>
     post("start", {
       goal: refs.goalInput.value.trim(),
       maxIterations: Number(refs.maxIterations.value || 60),
+      attachEditorContext: refs.attachContext.checked,
     })
   );
 

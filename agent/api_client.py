@@ -65,19 +65,28 @@ class AzureResponsesClient:
         self.api_key = api_key or config.AZURE_API_KEY
         self.model = model or config.MODEL_NAME
 
+        if not self.endpoint:
+            logger.warn(
+                "Azure AI Foundry endpoint not set - configure the extension "
+                "before running the agent."
+            )
+
         if not self.api_key:
             logger.warn(
-                "AZURE_OPENAI_API_KEY not set — the agent will fail on the "
-                "first model call. Set it before running."
+                "Azure AI Foundry API key not set - the agent will fail on "
+                "the first model call."
+            )
+
+        if not self.model:
+            logger.warn(
+                "Azure AI Foundry model/deployment not set - the agent will "
+                "fail on the first model call."
             )
 
         self.session = requests.Session()
-        self.session.headers.update(
-            {
-                "Content-Type": "application/json",
-                "api-key": self.api_key,
-            }
-        )
+        self.session.headers.update({"Content-Type": "application/json"})
+        if self.api_key:
+            self.session.headers["api-key"] = self.api_key
 
     # ------------------------------------------------------------------ #
     # Public helpers
@@ -140,6 +149,15 @@ class AzureResponsesClient:
     # ------------------------------------------------------------------ #
 
     def _post_with_retry(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        if not self.endpoint:
+            raise APIClientError("No Azure AI Foundry endpoint is configured.")
+        if not self.api_key:
+            raise APIClientError("No Azure AI Foundry API key is configured.")
+        if not self.model:
+            raise APIClientError(
+                "No Azure AI Foundry model or deployment name is configured."
+            )
+
         last_err: Optional[Exception] = None
         for attempt in range(1, config.HTTP_MAX_RETRIES + 1):
             try:

@@ -3,6 +3,7 @@ workspace/**
 **/__pycache__/**
 *.pyc
 *.pyo
+.pytest_cache/**
 .env
 .env.*
 agent.log
@@ -14,3 +15,8 @@ workspace/tasks.db
 agent/state.json
 agent/memory.json
 workspace/.agentvs/**
+agent-vs-code-gpt/**
+Users/**
+src/**/*.js
+src/**/*.js.map
+out/src/**
